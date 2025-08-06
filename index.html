@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>ChatBot Internal</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f7f7f8;
+            margin: 0;
+            padding: 0;
+        }
+
+        .chat-container {
+            max-width: 800px;
+            margin: auto;
+            padding: 20px;
+        }
+
+        .chat-box {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 10px;
+            height: 600px;
+            overflow-y: auto;
+        }
+
+        .message {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 6px;
+            max-width: 80%;
+            word-wrap: break-word;
+        }
+
+        .user {
+            background-color: #d1e7dd;
+            align-self: flex-end;
+        }
+
+        .bot {
+            background-color: #f8d7da;
+        }
+
+        .input-box {
+            display: flex;
+            margin-top: 15px;
+        }
+
+        input[type="text"] {
+            flex: 1;
+            padding: 10px;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+        }
+
+        button {
+            padding: 10px 15px;
+            margin-left: 10px;
+            border: none;
+            background-color: #0d6efd;
+            color: white;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="chat-container">
+        <h2>ChatBot Internal</h2>
+        <div class="chat-box" id="chat-box"></div>
+
+        <div class="input-box">
+            <input type="text" id="user-input" placeholder="Nhập tin nhắn..." />
+            <button onclick="sendMessage()">Gửi</button>
+        </div>
+    </div>
+
+    <script>
+        const chatBox = document.getElementById("chat-box");
+
+        function appendMessage(content, sender) {
+            const div = document.createElement("div");
+            div.className = "message " + sender;
+            div.innerText = content;
+            chatBox.appendChild(div);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        async function sendMessage() {
+            const input = document.getElementById("user-input");
+            const message = input.value.trim();
+            if (!message) return;
+
+            appendMessage(message, "user");
+            input.value = "";
+            appendMessage("...", "bot");
+
+            try {
+                const res = await fetch("https://vmtri.app.n8n.cloud/webhook/ac873734-0e73-46cc-b580-c374863fe93b", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({ chatInput: message }),
+                });
+
+                const rawData = await res.json();
+                const jsonStr = rawData[0]?.output || '[]';
+                const jsonMessage = rawData[0]?.message || '';
+                if (jsonMessage) {
+                    document.querySelector(".bot:last-child").remove(); // remove loading
+                    appendMessage(jsonMessage, "bot");
+                    return;
+                }
+                let parsedArray = [];
+                try {
+                    parsedArray = JSON.parse(jsonStr); // parse chuỗi JSON thành mảng object
+                } catch (e) {
+                    console.error("Lỗi parse JSON:", e);
+                }
+                document.querySelector(".bot:last-child").remove(); // remove loading
+                
+                parsedArray.forEach((item, index) => {
+                    const formatted = JSON.stringify(item, null, 4);
+                    appendMessage(formatted, "bot");
+                });
+            } catch (err) {
+                document.querySelector(".bot:last-child").remove();
+                appendMessage("Lỗi khi kết nối API", "bot");
+            }
+        }
+
+        document.getElementById("user-input").addEventListener("keypress", function (e) {
+            if (e.key === "Enter") {
+                sendMessage();
+            }
+        });
+    </script>
+</body>
+
+</html>
