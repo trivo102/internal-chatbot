@@ -45,8 +45,8 @@ async function sendMessage() {
         }
 
         parsedArray.forEach((item, index) => {
-            const formatted = JSON.stringify(item, null, 4);
-            appendMessage(formatted, "bot");
+            let formatted = JSON.stringify(item, null, 4).replace(/[{}\[\]]/g, "");
+            appendMessage(formatted.trim(), "bot");
         });
     } catch (err) {
         document.querySelector(".bot:last-child").remove();
